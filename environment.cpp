@@ -151,7 +151,7 @@ void Environment::Step() {
 			ay += dy;
 		}
 	}
-				  break;
+	break;
 	case LEFT:  ah = static_cast<Heading>((ah + 3) % 4);
 		std::cout << "Left\n";
 		break;
