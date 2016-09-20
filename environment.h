@@ -5,7 +5,6 @@
 
 class Environment {
 
-private:
 	bool agent_bumped : 1;
 	bool done : 1;
 	bool init : 1;
