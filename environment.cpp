@@ -87,10 +87,17 @@ void Environment::Print() const {
 	std::cout << "\nScore  " << score << std::endl;
 	std::cout << "Steps  " << steps << std::endl;
 	if (init) {
-		std::cout << std::endl << std::setw((width + 1)*x) << std::setfill('-') << "" << std::endl << std::setfill(' ');
+		std::cout << std::endl << std::setw((width + 1)*x) << std::setfill('-') << " " << std::endl << std::setfill(' ');
 		for (size_t i = 0; i < x; ++i) {
 			for (size_t j = 0; j < y; ++j) {
 				size_t w = 0;
+
+				////////////////////////////////////////////////////////////
+				if (i == hx && j == hy) {
+					++w;
+					std::cout << "H";
+				}
+
 				////////////////////////////////////////////////////////////
 				if (i == ax && j == ay) {
 					++w;
@@ -101,11 +108,7 @@ void Environment::Print() const {
 					case  SOUTH: std::cout << "V"; break;
 					}
 				}
-				////////////////////////////////////////////////////////////
-				if (i == hx && j == hy) {
-					++w;
-					std::cout << "H";
-				}
+
 				////////////////////////////////////////////////////////////
 				std::cout << std::setw(width - w) << env[i][j] << "";
 			}

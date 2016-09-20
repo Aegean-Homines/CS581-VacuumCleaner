@@ -11,6 +11,7 @@ typedef std::vector<std::vector<Node>> Map;
 struct Position{
 	int x, y;
 	Position(int newX = 0, int newY = 0) : x(newX), y(newY){};
+	bool operator==(Position const & rhs){ return (x == rhs.x && y == rhs.y); }
 	
 };
 
@@ -62,7 +63,6 @@ private:
 	Node* GetNextAvailableChild();
 	Action OrientTowardsTarget();
 	Action AdvanceTowardsNextNode();
-	Action TurnBack();
 
 };
 

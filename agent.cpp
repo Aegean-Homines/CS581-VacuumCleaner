@@ -26,6 +26,7 @@ Agent::Agent(int random_seed): orientation(NORTH), state(RUNNING), nextTarget(NU
 	}
 
 	currentNode = homeNode = &roomMap[MAX_MAP_SIZE / 2 - 1][MAX_MAP_SIZE / 2 - 1];
+	homeNode->parent = homeNode;
 	DiscoverNode(*homeNode);
 }
 
@@ -42,12 +43,15 @@ Action Agent::GetAction(Percept p) {
 	else{
 
 		if (p.bump){ // Hit a wall
-			nextTarget->status = WALL;
+			currentNode->status = WALL;
+			currentNode->children.clear();
 			nextTarget = NULL;
-			return AdvanceTowardsNextNode();
+			currentNode = currentNode->parent;
 		}
 
-		Node* childNode = GetChildNodeInOrientation(orientation); // Get the child in my direction
+		return AdvanceTowardsNextNode();
+
+		/*Node* childNode = GetChildNodeInOrientation(orientation); // Get the child in my direction
 		if (childNode){
 			nextTarget = childNode;
 			DiscoverNode(*nextTarget);
@@ -55,7 +59,7 @@ Action Agent::GetAction(Percept p) {
 		}
 		else{
 			return AdvanceTowardsNextNode();
-		}
+		}*/
 
 		
 
@@ -87,10 +91,15 @@ void Agent::GetCoordinatesInDirection(Node& currentNode, Heading requestedDirect
 
 void Agent::DiscoverNode(Node& nodeToBeDiscovered)
 {
-	Position childrenCoordinates;
+	if (nodeToBeDiscovered.status != UNDISCOVERED)
+		return;
 
-	for (int i = 0; i < 4; ++i){
+	for (int i = 0; i < MAX_CHILD_COUNTER; ++i){
+		Position childrenCoordinates;
 		GetCoordinatesInDirection(nodeToBeDiscovered, (Heading)i, childrenCoordinates);
+		if (nodeToBeDiscovered.parent->pos == childrenCoordinates){
+			continue;
+		}
 		RegisterChild(nodeToBeDiscovered, childrenCoordinates);
 	}
 
@@ -118,11 +127,15 @@ Node* Agent::GetChildNodeInOrientation(Heading orientation)
 Node* Agent::GetNextAvailableChild()
 {
 	Node* childNode = NULL;
-	int counter = 0;
+	/*int counter = 0;
 	do 
 	{
 		childNode = GetChildNodeInOrientation((Heading)counter++);
-	} while (childNode->status != UNDISCOVERED || counter != MAX_CHILD_COUNTER);
+	} while (!childNode && counter != MAX_CHILD_COUNTER);*/
+
+	for (int i = 0; i < currentNode->children.size() && !childNode; ++i){
+		childNode = GetChildNodeInOrientation((Heading)i);
+	}
 
 	return childNode;
 
@@ -131,73 +144,69 @@ Node* Agent::GetNextAvailableChild()
 
 Action Agent::OrientTowardsTarget()
 {
+	Heading targetOrientation = currentNode->RelativeOrientation(nextTarget);
+	if (targetOrientation == orientation){
+		state = RUNNING;
+		currentNode = nextTarget;
+		nextTarget = NULL;
+		return FORWARD;
+	}
 	Heading leftSide = static_cast<Heading>((orientation + 3) % 4);
-	Position
-	
-
+	if (targetOrientation == leftSide){
+		state = TURNING_LEFT;
+		orientation = leftSide;
+		return LEFT;
+	}
 	Heading rightSide = static_cast<Heading>((orientation + 1) % 4);
-
-
+	if (targetOrientation == rightSide){
+		state = TURNING_RIGHT;
+		orientation = rightSide;
+		return RIGHT;
+	}
 	Heading backSide = static_cast<Heading>((orientation + 2) % 4);
+	if (targetOrientation == backSide){
+		state = TURNING_BACK;
+		orientation = leftSide;
+		return LEFT;
+	}
 }
 
 
 Action Agent::AdvanceTowardsNextNode()
 {
 	if (!nextTarget){ // Find the next child
+		/*nextTarget = GetChildNodeInOrientation(orientation);
+		if (!nextTarget){
+			nextTarget = GetNextAvailableChild();
+		}*/
 		nextTarget = GetNextAvailableChild();
 	}
 
-	if (!nextTarget){ // No available child -> go up one level
-		TurnBack();
-	}
-	else{
-		DiscoverNode(*nextTarget);
-		return OrientTowardsTarget();
+	if (!nextTarget){ // If no child is available
+
+		if (currentNode == currentNode->parent){
+			return SHUTOFF;
+		}//This condition returns true only for shutoff state
+		nextTarget = currentNode->parent;
 	}
 
-
-	/*switch (state)
-	{
-	case RUNNING:
-		Node* childNode = GetNextAvailableChild(); //Get the next available child;
-		if (childNode){ // If child is found, advance towards that child's direction
-			OrientAndAdvance(childNode);
-		}
-		else{ // If not then this node is completely discovered, move to parent
-			currentNode = *currentNode.parent;
-		}
-	case TURNING_AROUND:
-		break;
-	case RETURN_TO_NEXT_BRANCH:
-		break;
-	case DONE:
-		break;
-	default:
-		break;
-	}*/
+	DiscoverNode(*nextTarget);
+	return OrientTowardsTarget();
 	
 }
-
-
-Action Agent::TurnBack()
-{
-
-}
-
 Heading Node::RelativeOrientation(Node* node)
 {
 	Position relativeNodePosition = node->pos;
 	int deltaX = pos.x - relativeNodePosition.x;
-	if (deltaX < 0){
+	if (deltaX > 0){
 		return WEST;
 	}
-	else if (deltaX > 0){
+	else if (deltaX < 0){
 		return EAST;
 	}
 
 	int deltaY = pos.y - relativeNodePosition.y;
-	if (deltaY < 0){
+	if (deltaY > 0){
 		return NORTH;
 	}
 
