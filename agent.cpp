@@ -26,8 +26,9 @@ Agent::Agent(int random_seed): orientation(NORTH), state(RUNNING), nextTarget(NU
 	}
 
 	currentNode = homeNode = &roomMap[MAX_MAP_SIZE / 2 - 1][MAX_MAP_SIZE / 2 - 1];
-	homeNode->parent = homeNode;
+	homeNode->parent = NULL;
 	DiscoverNode(*homeNode);
+	homeNode->status = DISCOVERED;
 }
 
 Action Agent::GetAction(Percept p) {
@@ -97,20 +98,17 @@ void Agent::DiscoverNode(Node& nodeToBeDiscovered)
 	for (int i = 0; i < MAX_CHILD_COUNTER; ++i){
 		Position childrenCoordinates;
 		GetCoordinatesInDirection(nodeToBeDiscovered, (Heading)i, childrenCoordinates);
-		if (nodeToBeDiscovered.parent->pos == childrenCoordinates){
+		if (nodeToBeDiscovered.parent != NULL && nodeToBeDiscovered.parent->pos == childrenCoordinates){
 			continue;
 		}
 		RegisterChild(nodeToBeDiscovered, childrenCoordinates);
 	}
-
-	nodeToBeDiscovered.status = DISCOVERED;
 }
 
 void Agent::RegisterChild(Node& parentNode, Position& childPosition)
 {
 	Node* childNode;
 	childNode = &roomMap[childPosition.x][childPosition.y];
-	childNode->parent = &parentNode;
 	parentNode.children.push_back(childNode);
 }
 
@@ -127,11 +125,6 @@ Node* Agent::GetChildNodeInOrientation(Heading orientation)
 Node* Agent::GetNextAvailableChild()
 {
 	Node* childNode = NULL;
-	/*int counter = 0;
-	do 
-	{
-		childNode = GetChildNodeInOrientation((Heading)counter++);
-	} while (!childNode && counter != MAX_CHILD_COUNTER);*/
 
 	for (int i = 0; i < currentNode->children.size() && !childNode; ++i){
 		childNode = GetChildNodeInOrientation((Heading)i);
@@ -147,6 +140,10 @@ Action Agent::OrientTowardsTarget()
 	Heading targetOrientation = currentNode->RelativeOrientation(nextTarget);
 	if (targetOrientation == orientation){
 		state = RUNNING;
+		if (nextTarget->status == UNDISCOVERED){
+			nextTarget->parent = currentNode;
+			nextTarget->status = DISCOVERED;
+		}
 		currentNode = nextTarget;
 		nextTarget = NULL;
 		return FORWARD;
@@ -171,7 +168,6 @@ Action Agent::OrientTowardsTarget()
 	}
 }
 
-
 Action Agent::AdvanceTowardsNextNode()
 {
 	if (!nextTarget){ // Find the next child
@@ -184,7 +180,7 @@ Action Agent::AdvanceTowardsNextNode()
 
 	if (!nextTarget){ // If no child is available
 
-		if (currentNode == currentNode->parent){
+		if (currentNode->parent == NULL){
 			return SHUTOFF;
 		}//This condition returns true only for shutoff state
 		nextTarget = currentNode->parent;

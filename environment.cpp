@@ -170,6 +170,6 @@ void Environment::Step() {
 	default:;
 	};
 
-	system("PAUSE");
+	//system("PAUSE");
 
 }

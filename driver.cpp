@@ -8,8 +8,9 @@ int main(int, char** argv) {
 	Environment e(argv[1]);
 
 	while (!e.Done()) {
-		e.Print();
+		//e.Print();
 		e.Step();
 	}
+	e.Print();
 	e.Print();
 }
